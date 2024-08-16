@@ -1,0 +1,67 @@
+services:
+  app:
+    container_name: shortned
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+    ports:
+      - '3000:3000'
+    volumes:
+      - .:/home/node/app
+    depends_on:
+      postgresDB:
+        condition: service_healthy
+    networks:
+      - shortned-network
+
+  postgresDB:
+    image: postgres:15.7
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=shortned
+      - TZ=America/Sao_Paulo
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - '5434:5432'
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-h', 'postgresDB', '-p', '5432', '-q']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - shortned-network
+
+  pgadmin:
+    container_name: pgadminShortned
+    image: dpage/pgadmin4:6.15
+    environment:
+      PGADMIN_DEFAULT_EMAIL: dgo.eduardolima@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: 123456
+    ports:
+      - '5053:80'
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      - postgresDB
+    networks:
+      - shortned-network
+
+  redis:
+    image: redis:latest
+    ports:
+      - '6379:6379'
+    networks:
+      - shortned-network
+
+networks:
+  shortned-network:
+
+volumes:
+  postgres-data:
+  pgadmin-data:
